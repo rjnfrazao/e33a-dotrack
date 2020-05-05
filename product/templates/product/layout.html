@@ -1,0 +1,67 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <!-- Scripts -->
+        <script src="{% static 'product/index.js' %}"></script> 
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+        <!-- CSS -->
+    <!--    <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">    
+    -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <link href="{% static 'product/styles.css' %}" rel="stylesheet">
+
+        <title>{% block title %}Dotrack - Device Planning{% endblock %}</title>
+    
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="#">Dotrack</a>
+          
+            <div>
+              <ul class="navbar-nav">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <!-- No Time to Implement load_profile('{{ user.username }}')-->
+                        <a class="nav-link" id="menu-profile" onClick="btn_future_release()" href="profile.html"><strong>{{ user.username }}</strong></a>
+
+                    </li>
+                {% endif %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Product
+                    </a>                  
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">                
+                        <a class="dropdown-item" id="menu-product" onClick="product_catalog_page('',0)" href="product.html">Catalog</a>
+                        {% if user.is_authenticated %}
+                            <a class="dropdown-item" id="menu-product" onClick="add_product_page()" href="add_product.html">Add product</a>
+                        {% endif %}                    
+                    </div>
+                </li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" onClick="btn_future_release()" href="following.html">Demand</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Log Out</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Log In</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'register' %}">Register</a>
+                    </li>
+                {% endif %}
+              </ul>
+            </div>
+        </nav>
+        <div id="error-message" class="alert alert-danger" style="display:none"></div>
+        <div class="body">
+            {% block body %}
+            {% endblock %}
+        </div>    
+    </body>
+</html>

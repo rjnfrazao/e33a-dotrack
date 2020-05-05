@@ -10,14 +10,34 @@ ORGANIZATION_TYPES = (
     ('S', 'Sponsor'),
 )
 
+
+def get_profiles(user_id):
+    profiles = UserProfile.objects.filter(user__id=user_id)
+    profilesToStr = ""
+    if profiles.exists():
+        profilesToStr = ', '.join([profile.name for profile in profiles])
+    return profilesToStr
+
 # Create your models here.
 
 
-class User(AbstractUser):
-    pass
+class UserProfile(models.Model):
+    name = models.CharField(
+        "Profile Name", max_length=50, unique=True, null=False)
+    productcategory = models.ManyToManyField(
+        "ProductCategory",  blank=True)
+    creation_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"id = {self.id}, username = {self.username}, first_name = {self.first_name}, last_name = {self.last_name}"
+        return f"id = {self.id}, name = {self.name}, type = {self.productcategory}"
+
+
+class User(AbstractUser):
+
+    profiles = models.ManyToManyField(UserProfile)
+
+    def __str__(self):
+        return f"id = {self.id}, username = {self.username}, first_name = {self.first_name}, last_name = {self.last_name}, profiles = {get_profiles(self.id)}"
 
     def serialize(self):
         return {
@@ -30,20 +50,14 @@ class User(AbstractUser):
         }
 
 
-class UserProfile(models.Model):
-    name = models.CharField(
-        "Profile Name", max_length=50, unique=True, null=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    productcategory = models.ManyToManyField(
-        "ProductCategory",  blank=True)
-    creation_date = models.DateTimeField(auto_now_add=True)
-
-
 class ProductCategory(models.Model):
     code = models.CharField("Code", max_length=10, unique=True, null=False)
     name = models.CharField(
         "Category Name", max_length=50, unique=True, null=False)
     creation_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"id = {self.id}, code = {self.code}, name = {self.name}"
 
 
 class Organization(models.Model):
@@ -54,12 +68,18 @@ class Organization(models.Model):
         "Type", choices=ORGANIZATION_TYPES, max_length=1, null=False)
     creation_date = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"id = {self.id}, code = {self.code}, name = {self.name}, type = {self.type}"
+
 
 class Event(models.Model):
     code = models.CharField("Code", max_length=6, unique=True, null=False)
     name = models.CharField("Event Name", max_length=20,
                             unique=True, null=False)
     creation_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"id = {self.id}, code = {self.code}, name = {self.name}"
 
 
 class ProductModel(models.Model):
@@ -68,6 +88,9 @@ class ProductModel(models.Model):
     manufacturer_code = models.CharField(
         "Manufacturer Code", max_length=40, null=True)
     creation_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"id = {self.id}, name = {self.name}, manufacturer code = {self.manufacturer_code}, "
 
 
 class Product(models.Model):
@@ -78,10 +101,29 @@ class Product(models.Model):
     category = models.ForeignKey(
         ProductCategory, on_delete=models.PROTECT, null=False)
     model = models.ForeignKey(
-        ProductModel, on_delete=models.PROTECT, null=True)
-    imagem = models.TextField("Imagem", null=True)
-    stocks = models.ManyToManyField(Event, through='ProductStock')
-    creation_date = models.DateTimeField(auto_now_add=True)
+        ProductModel, on_delete=models.PROTECT, null=True, blank=True)
+    imagem = models.TextField("Imagem", null=True, blank=True)
+    stocks = models.ManyToManyField(
+        Event, through='ProductStock', null=True, blank=True)
+    creation_date = models.DateTimeField(
+        auto_now_add=True, null=True, blank=True)
+
+    def __str__(self):
+        return f"id = {self.id}, code = {self.code}, name = {self.name}, creation_date = {self.creation_date}, category = {self.category.name}"
+
+    def serialize(self, user_id):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "name": self.name,
+            "description": self.description,
+            "category_id": self.category.id,
+            "category": self.category.name,
+            "model_id": self.model.id,
+            "model": self.model.name,
+            "creation_date": self.creation_date.strftime("%b %d %Y"),
+            "owner": User.objects.filter(id=user_id, profiles__productcategory__product__id=self.id).count()
+        }
 
 
 class ProductStock(models.Model):
