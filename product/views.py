@@ -9,7 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 import json
 
-from .models import User, Product, ProductCategory, ProductModel, UserProfile, ProductStock
+from .models import User, Product, ProductCategory, ProductModel,
+UserProfile, ProductStock
 
 # Global Variables
 gbl_page_size = 10      # page size for the number o items to be displayed
@@ -48,8 +49,10 @@ def pages(count, offset):
 
 #
 #   Page loaded after user is logged in.
-#   This loads also all smaller lists needed in the forms. Those are lists which does´t changes too much
-#   avoid frequent http requets to load the lists. Downside, user has to log out and log in again to update the lists.
+#   This loads also all smaller lists needed in the forms. Those are
+#   lists which does´t changes too much void frequent http requets
+#   a to load the lists. Downside, user has to log out and
+#   log in again to update the lists.
 #
 
 
@@ -57,7 +60,8 @@ def index(request):
 
     return render(request, "product/index.html", {
         # ProductCategory.objects.order_by("name").all(),
-        "categories": ProductCategory.objects.filter(userprofile__user__id=request.user.id),
+        "categories": ProductCategory.objects
+        .filter(userprofile__user__id=request.user.id),
         "models": ProductModel.objects.order_by("name").all()
     })
 
@@ -105,7 +109,8 @@ def register(request):
         # Attempt to create new user
         try:
             user = User.objects.create_user(
-                username, email, password, first_name=first_name, last_name=last_name,)
+                username, email, password, first_name=first_name,
+                last_name=last_name,)
             user.save()
         except IntegrityError:
             return render(request, "product/register.html", {
@@ -137,7 +142,7 @@ def upd_product(request):
     # Get message of post
     data = json.loads(request.body)
     p = data.get('product', '')
-    #print(f"Product : {data.get('product', '')}")
+    # print(f"Product : {data.get('product', '')}")
 
     # Check of message was filled in.
     if (data.get("product", "") == ""):
@@ -187,7 +192,7 @@ def add_product(request):
     data = json.loads(request.body)
     product = data.get("product", "")
 
-    #print(f"Product : {data.get('product', '')}")
+    # print(f"Product : {data.get('product', '')}")
     # Check of message was filled in.
     if (data.get("product", "") == ""):
         # return error message
@@ -212,7 +217,8 @@ def add_product(request):
 
         product = product.serialize(user_id)
 
-        # Retorna produto salvo, assim o Javascript consegue mostrar a pagina do produto salvo.
+        # Retorna produto salvo, assim o Javascript consegue mostrar a
+        # pagina do produto salvo.
         response = {}
         response["products"] = product
 
@@ -220,7 +226,8 @@ def add_product(request):
 
 
 """
-API to return the user profile. This view is invoked from a javascript called load_profile().
+API to return the user profile.
+This view is invoked from a javascript called load_profile().
 Return profile in JSON format.
 
 Input: username(GET param) - Used to get the profile by username.
@@ -253,53 +260,57 @@ API to return the product catalog.
 
 User doesn´t need to be logged to perform this search.
 
-Pagination information is returned to the front end, in order to render the page.
+Pagination information is returned to the front end,
+in order to render the page.
 
 Input:
-    f(GET param) - Used to filter the products based on partial search in the product name.
+    f(GET param) - Used to filter the products based on partial
+        search in the product name.
 
 """
 @csrf_exempt
 def get_catalog(request):
 
-    # check if get method
-    if request.method != "GET":
-        return JsonResponse({"error": "GET request required."}, status=400)
-
-    # checked if the user is logged, store in temporary variable.
-    if request.user.is_authenticated:
-        user_id = request.user.id
-    else:
-        user_id = 0
-
-    offset = int(request.GET["offset"])
-    filter = request.GET["f"]
-    limit = offset + gbl_page_size
-
-    if (filter == ""):
-        count = Product.objects.all().count()
-        products = Product.objects.order_by("id").all()[offset:limit]
-    else:
-        count = Product.objects.filter(
-            name__contains=filter).count()
-        products = Product.objects.order_by("id").filter(
-            name__contains=filter)[offset:limit]
-
-    products = [product.serialize(user_id)
-                for product in products]
-
-    response = {}
     try:
-        # Add Pages info to the response to implement pagination.
-        response["pages"] = pages(count, offset)
+        # check if get method
+        if request.method != "GET":
+            return JsonResponse({"error": "GET request required."}, status=400)
+
+        # checked if the user is logged, store in temporary variable.
+        if request.user.is_authenticated:
+            user_id = request.user.id
+        else:
+            user_id = 0
+
+        offset = int(request.GET["offset"])
+        filter = request.GET["f"]
+        limit = offset + gbl_page_size
+
+        if (filter == ""):
+            count = Product.objects.all().count()
+            products = Product.objects.order_by("id").all()[offset:limit]
+        else:
+            count = Product.objects.filter(
+                name__contains=filter).count()
+            products = Product.objects.order_by("id").filter(
+                name__contains=filter)[offset:limit]
+
+        products = [product.serialize(user_id)
+                    for product in products]
+
+        response = {}
+        try:
+            # Add Pages info to the response to implement pagination.
+            response["pages"] = pages(count, offset)
+        except:
+            pass
+
+        response["products"] = products
+
+        return JsonResponse(response, safe=False)
     except:
-        pass
-
-    response["products"] = products
-
-    return JsonResponse(response, safe=False)
-    # except:
-    #    return JsonResponse({"API get_catalog error": "Undefined error, when returning the catalog"}, status=400)
+        return JsonResponse({"API get_catalog error": "Undefined error,
+                             when returning the catalog"}, status=400)
 
 
 """
@@ -313,32 +324,35 @@ Input:
 @csrf_exempt
 def get_product(request, product_code):
 
-    # check if get method
-    if request.method != "GET":
-        return JsonResponse({"error": "GET request required."}, status=400)
-
-    # checked if the user is logged, store in temporary variable.
-    if request.user.is_authenticated:
-        user_id = request.user.id
-    else:
-        user_id = 0
-
-    count = 1
-    offset = 0
-    # Return the product from the database
-    products = Product.objects.get(code=product_code)
-    # create the json format from the product returned.
-    products = products.serialize(user_id)
-
-    response = {}
     try:
-        # Add Pages info to the response to implement pagination.
-        response["pages"] = pages(count, offset)
+        # check if get method
+        if request.method != "GET":
+            return JsonResponse({"error": "GET request required."}, status=400)
+
+        # checked if the user is logged, store in temporary variable.
+        if request.user.is_authenticated:
+            user_id = request.user.id
+        else:
+            user_id = 0
+
+        count = 1
+        offset = 0
+        # Return the product from the database
+        products = Product.objects.get(code=product_code)
+        # create the json format from the product returned.
+        products = products.serialize(user_id)
+
+        response = {}
+        try:
+            # Add Pages info to the response to implement pagination.
+            response["pages"] = pages(count, offset)
+        except:
+            pass
+
+        response["products"] = products
+
+        return JsonResponse(response, safe=False)
     except:
-        pass
-
-    response["products"] = products
-
-    return JsonResponse(response, safe=False)
-    # except:
-    #    return JsonResponse({"API get_products error": "Undefined error, when returning products"}, status=400)
+        return JsonResponse({"API get_products error":
+                             "Undefined error, when returning products"},
+                            status=400)
